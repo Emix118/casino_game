@@ -1,0 +1,137 @@
+import random
+import sys
+
+class Error():
+    def error(self, message):
+        print('ERROR: ' + message)
+        sys.exit()
+
+class Card():
+    """A class to create cards with a number and type"""
+
+    def __init__(self, number, type):
+        self.number = number
+        self.type = type
+
+class Game(Error):
+    """A class to manage the essentials of the game"""
+
+    types = ['Diamonds', 'Spades', 'Clovers', 'Hearts']
+    numbers = ['Ace','Jack', 'Queen', 'King']
+
+    def __init__(self, players):
+        if len(players) > 4:
+            self.error("Too many players")
+
+        self.players = players
+
+        self.deck = []
+        self.middle = Holders()
+
+        self.set_players_game()
+
+        self.build_deck()
+        self.deal_cards()
+        self.players[0].isturn = True
+
+    def set_players_game(self):
+        for player in self.players:
+            player.set_game(self)
+
+    def build_deck(self):
+        # Create a standard 52-card deck using the Card class
+        # and shuffle it
+
+        # Adding the numbers to numbers array
+        for n in range(2,11):
+            self.numbers.insert(n, str(n))
+
+        for t in self.types:
+            for n in self.numbers:
+                self.deck.append(Card(n, t))
+        random.shuffle(self.deck)
+
+    def deal_cards(self):
+        # Dealing the cards in a 2-2 format to the
+        # players and middle area
+
+        # NOTE: Since the computer is dealing the cards
+        # there is no need to have a dealer
+
+        for i in range(0, 2):
+
+            # Dealing two cards to each player
+            for player in self.players:
+                for i in range(0, 2):
+                    player.cards.append(self.deck.pop())
+
+            # Placing 2 cards in middle
+            for i in range(0, 2):
+                self.middle.cards.append(self.deck.pop())
+
+    def moves(self, player):
+        pass
+
+class Holders():
+    "A class encompassing the players and the middle area"
+
+    def __init__(self):
+        self.cards = []
+
+    # A separte function to allow the Game class to access it
+    # and for the game to be defined after the players
+    def set_game(self, game):
+        self.game = game
+
+class Player(Holders):
+    "A class for the players"
+
+    def __init__(self):
+        Holders.__init__(self)
+        self.cards_taken = []
+        self.point = 0
+        self.isturn = False
+
+    def take_card(self):
+        pass
+
+
+# DEBUG: function to print out each card's number and type
+def print_cards(object):
+    for card in object.cards:
+        print(card.number, "of", card.type)
+
+# DEBUG: function to print out the cards of a list of objects
+# in an organized fashion
+def cards_by_object(objects):
+    count = 0
+    for o in objects:
+        if isinstance(o, Player):
+            count+=1
+            print("--------------Player " + str(count))
+        else:
+            print("--------------Middle")
+        print_cards(o)
+    print("--------------")
+
+# DEBUG: function to print out who's turn it is
+def check_turn(game):
+    count = 0
+    for player in game.players:
+        count+=1
+        if player.isturn == True:
+            print("It is Player " +str(count)+ "'s turn")
+            return
+    Error.error(None, "Weird, it is no one's turn")
+
+player1 = Player()
+player2 = Player()
+player3 = Player()
+player4 = Player()
+game = Game([player1, player2, player3, player4])
+
+cards_by_object([player1, player2,
+                game.middle, player3,
+                player4])
+
+check_turn(game)
