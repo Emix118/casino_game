@@ -17,7 +17,7 @@ class Game(Error):
     """A class to manage the essentials of the game"""
 
     types = ['Diamonds', 'Spades', 'Clovers', 'Hearts']
-    numbers = ['Ace','Jack', 'Queen', 'King']
+    numbers = ['Ace', 'Jack', 'Queen', 'King']
 
     def __init__(self, players):
         if len(players) > 4:
@@ -32,9 +32,12 @@ class Game(Error):
 
         self.build_deck()
         self.deal_cards()
+        self.deal_middle()
         self.players[0].isturn = True
 
     def set_players_game(self):
+        # Allowing all players to access paramaters
+        # from the game class without the need to inherit
         for player in self.players:
             player.game = self
 
@@ -58,15 +61,18 @@ class Game(Error):
         # NOTE: Since the computer is dealing the cards
         # there is no need to have a dealer
 
+        # Dealing two cards to each player twice
         for i in range(0, 2):
-
-            # Dealing two cards to each player
             for player in self.players:
                 for i in range(0, 2):
                     player.cards.append(self.deck.pop())
 
-            # Placing 2 cards in middle
-            for i in range(0, 2):
+    def deal_middle(self):
+            # Placing 4 cards in middle
+
+            # Separte from deal cards because no cards
+            # are placed in the middle after each round
+            for i in range(0, 4):
                 self.middle.cards.append(self.deck.pop())
 
     def most_cards(self):
@@ -103,10 +109,6 @@ class Game(Error):
             else:
                 self.next_round()
 
-
-    def moves(self, player):
-        pass
-
     def end_game(self):
         pass
 
@@ -122,8 +124,14 @@ class Holders():
 class Middle(Holders):
     "A class for the middle area"
 
-    def __init__(self):
-        Holders.__init__(self)
+    def find_card(self, number, type):
+        pos = -1
+        for card in self.cards:
+            pos+=1
+            if card.number == number:
+                if card.type == type:
+                    return [pos, card]
+
 
 class Player(Holders):
     "A class for the players"
@@ -134,19 +142,41 @@ class Player(Holders):
         self.cards_taken = []
         self.points = 0
         self.isturn = False
+
+        # For access to the current game's list
+        # of players to compare
         self.game = None
 
     def update_points(self):
 
-        # if game.most_spades()[1] == self:
-        #     self.points+=1
+        for card in self.cards_taken:
+            if card.number == "10":
+                if card.type == 'Diamonds':
+                    self.points+=2
+            if card.number == "2":
+                if card.type == 'Spades':
+                    self.points+=1
+            if card.number == 'Ace':
+                self.points+=1
 
-        if game.most_cards()[1] == self:
+        if self.game.most_spades()[1] == self:
+            self.points+=1
+
+        if self.game.most_cards()[1] == self:
             self.points+=3
 
-    def take_card(self):
-        pass
+    def take_card(self, number, type):
+        pos = self.game.middle.find_card(number, type)
+        if pos:
+            pos = self.game.middle.find_card(number, type)[0]
+            self.cards_taken.append(game.middle.cards.pop(pos))
 
+        ##
+        cards_by_object([player1, game.middle, player2])
+
+
+
+###############################################################
 
 # DEBUG: function to print out each card's number and type
 def print_cards(object):
@@ -172,17 +202,6 @@ def check_turn(game):
             return
     Error.error(None, "Weird, it is no one's turn")
 
-# DEBUG: Convinient way to initialize a game with two players
-def init2p():
-    player1 = Player("Player 1")
-    player2 = Player("Player 2")
-
-    game = Game([player1, player2])
-
-    cards_by_object([player1, game.middle, player2])
-
-    check_turn(game)
-
 # DEBUG: Convinient way to initialize a game with 4 players
 def init4p():
     player1 = Player("Player 1")
@@ -198,14 +217,24 @@ def init4p():
 
     check_turn(game)
 
-init2p()
+# DEBUG: Convinient way to initialize a game with two players
+def init2p():
+    player1 = Player("Player 1")
+    player2 = Player("Player 2")
 
-# player1.cards_taken = [1,2,3,4,5,6]
-# player2.cards_taken = [1,2,3]
-# player3.cards_taken = [1,2,3]
-# player4.cards_taken = [1,2,3,4,5,6]
-#
-# for player in game.players:
-#     print(player.cards_taken)
-#     player.update_points()
-#     print(player.points)
+    game = Game([player1, player2])
+
+    cards_by_object([player1, game.middle, player2])
+
+    check_turn(game)
+
+    # player1.cards_taken = [Card("Ace", "Clovers")]
+    # player2.cards_taken = [Card("Ace", "Spades")]
+    # # player3.cards_taken = [1,2,3]
+    # # player4.cards_taken = [1,2,3,4,5,6]
+    #
+    # for player in game.players:
+    #     player.update_points()
+    #     print(player.points, player.name)
+
+# init2p()
