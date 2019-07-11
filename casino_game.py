@@ -132,17 +132,30 @@ class Holders():
     def __init__(self):
         self.cards = []
 
+    def number(self, number, to_int = False):
+        if to_int:
+            if isinstance(number, str):
+                if number.isdigit():
+                    return int(number)
+                else:
+                    return False
+        else:
+            if isinstance(number, int):
+                return str(number)
+            else:
+                return number
+
 class Middle(Holders):
     "A class for the middle area"
 
     def find_card(self, number, type):
+        number = self.number(number)
         pos = -1
         for card in self.cards:
             pos+=1
             if card.number == number:
                 if card.type == type:
                     return [pos, card]
-
 
 class Player(Holders, Error):
     "A class for the players"
@@ -178,22 +191,73 @@ class Player(Holders, Error):
 
     def take(self, number, type):
         if self.isturn:
-            if isinstance(number, int):
-                number = str(number)
-            pos = self.game.middle.find_card(number, type)
-            if pos:
-                pos = self.game.middle.find_card(number, type)[0]
-                self.cards_taken.append(game.middle.cards.pop(pos))
-                self.game.next_turn()
-            else:
-                self.error("Card not found")
+            number = self.number(number)
+            for myCard in self.cards:
+                if myCard.number == number:
+                    if myCard.type == type:
+                        self.to_taken(number, type)
+                        self.to_taken(myCard = myCard,
+                                        to_self = True)
+
+        else:
+            self.error("Not your turn")
 
             ##
             cards_by_object([player1, game.middle, player2])
 
+    def take_add(self, *cards):
+        # Assumes the following format:
+        # [Card number, Card type], [...], ...
+        if self.isturn:
+
+            total = 0
+            for n in cards:
+                if self.number(n[0], True) != False:
+                    number = self.number(n[0], True)
+                    total+=number
+                else:
+                    # CHECK RULES FOR THE GAME:
+                    # Do King/Queen/Jack have values?
+                    self.error("""One of the cards
+is not a number card""")
+                    return
+
+            for myCard in self.cards:
+                if myCard.number.isdigit():
+                    if total == int(myCard.number):
+                        for card in cards:
+                            self.to_taken(card[0], card[1])
+                            self.to_taken(myCard = myCard,
+                                            to_self = True)
+            self.error("""Those cards don't add up
+to any of your cards""")
+        else:
+            self.error("Not your turn")
+
+        ##
+        cards_by_object([player1, game.middle, player2])
+
+    def to_taken(self, number = None, type = None,
+                        myCard = None, to_self = False):
+        if to_self:
+            try:
+                i = self.cards.index(myCard)
+                self.cards_taken.append(self.cards.pop(i))
+            except:
+                self.error("""Unexpected...Your card was
+not found. Please panic""")
+        try:
+            pos = self.game.middle.find_card(number, type)[0]
+            self.cards_taken.append(game.middle.cards.pop(pos))
+            self.game.next_turn()
+        except:
+            self.error("Card not found")
+            return
 
 
 ###############################################################
+"""Since its based on console, these functions are mostly used
+for displaying useful information"""
 
 # DEBUG: function to print out each card's number and type
 def print_cards(object):
