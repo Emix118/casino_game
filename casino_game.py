@@ -2,9 +2,10 @@ import random
 import sys
 
 class Error():
-    def error(self, message):
+    def error(self, message, stop = False):
         print('ERROR: ' + message)
-        sys.exit()
+        if stop:
+            sys.exit()
 
 class Card():
     """A class to create cards with a number and type"""
@@ -21,7 +22,7 @@ class Game(Error):
 
     def __init__(self, players):
         if len(players) > 4:
-            self.error("Too many players")
+            self.error("Too many players", True)
 
         self.players = players
 
@@ -29,11 +30,12 @@ class Game(Error):
         self.middle = Middle()
 
         self.set_players_game()
+        self.players[0].isturn = True
+        self.turn = 0
 
         self.build_deck()
         self.deal_cards()
         self.deal_middle()
-        self.players[0].isturn = True
 
     def set_players_game(self):
         # Allowing all players to access paramaters
@@ -74,6 +76,15 @@ class Game(Error):
             # are placed in the middle after each round
             for i in range(0, 4):
                 self.middle.cards.append(self.deck.pop())
+
+    def next_turn(self):
+        self.players[self.turn].isturn = False
+
+        if len(self.players) < self.turn + 1:
+            self.turn = 0
+            self.players[self.turn].isturn = True
+        else:
+            self.players[self.turn].isturn = True
 
     def most_cards(self):
         current_lead = [0, None]
@@ -133,7 +144,7 @@ class Middle(Holders):
                     return [pos, card]
 
 
-class Player(Holders):
+class Player(Holders, Error):
     "A class for the players"
 
     def __init__(self, name):
@@ -165,14 +176,20 @@ class Player(Holders):
         if self.game.most_cards()[1] == self:
             self.points+=3
 
-    def take_card(self, number, type):
-        pos = self.game.middle.find_card(number, type)
-        if pos:
-            pos = self.game.middle.find_card(number, type)[0]
-            self.cards_taken.append(game.middle.cards.pop(pos))
+    def take(self, number, type):
+        if self.isturn:
+            if isinstance(number, int):
+                number = str(number)
+            pos = self.game.middle.find_card(number, type)
+            if pos:
+                pos = self.game.middle.find_card(number, type)[0]
+                self.cards_taken.append(game.middle.cards.pop(pos))
+                self.game.next_turn()
+            else:
+                self.error("Card not found")
 
-        ##
-        cards_by_object([player1, game.middle, player2])
+            ##
+            cards_by_object([player1, game.middle, player2])
 
 
 
@@ -238,3 +255,12 @@ def init2p():
     #     print(player.points, player.name)
 
 # init2p()
+
+player1 = Player("Player 1")
+player2 = Player("Player 2")
+
+game = Game([player1, player2])
+
+cards_by_object([player1, game.middle, player2])
+
+check_turn(game)
