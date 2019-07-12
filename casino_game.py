@@ -1,11 +1,16 @@
 import random
 import sys
+import inspect
 
 class Error():
-    def error(self, message, stop = False):
-        print('ERROR: ' + message)
+    def error(self, message, line, stop = False):
+        print('ERROR: ' + message, line)
         if stop:
             sys.exit()
+
+    def lineon(self):
+        # Determines the current line in the program
+        return inspect.currentframe().f_back.f_lineno
 
 class Card():
     """A class to create cards with a number and type"""
@@ -22,7 +27,7 @@ class Game(Error):
 
     def __init__(self, players):
         if len(players) > 4:
-            self.error("Too many players", True)
+            self.error("Too many players", self.lineon(), True)
 
         self.players = players
 
@@ -84,6 +89,7 @@ class Game(Error):
             self.turn = 0
             self.players[self.turn].isturn = True
         else:
+            self.turn+=1
             self.players[self.turn].isturn = True
 
     def most_cards(self):
@@ -126,7 +132,7 @@ class Game(Error):
     def next_round():
         pass
 
-class Holders():
+class Holders(Error):
     "A class encompassing the players and the middle area"
 
     def __init__(self):
@@ -139,14 +145,34 @@ class Holders():
                     return int(number)
                 else:
                     return False
+            else:
+                return number
         else:
             if isinstance(number, int):
                 return str(number)
             else:
                 return number
 
-class Middle(Holders):
-    "A class for the middle area"
+    def card_value(self, number):
+        numbers = ['Ace', 'Jack', 'Queen', 'King']
+        more = ['A', 'J', 'Q', 'K']
+        if number in numbers:
+            i = numbers.index(number)
+        elif number in more:
+            i = more.index(number)
+        else:
+            self.error("Incorrect value passed in",
+                        self.lineon())
+            return -100
+
+        if i == 0:
+            value=int(input("Pick the value of your Ace:"))
+            if value == 1 or value == 14:
+                return value
+            else:
+                self.error("Incorrect value passed in",
+                            self.lineon())
+        return 10+i
 
     def find_card(self, number, type):
         number = self.number(number)
@@ -157,7 +183,10 @@ class Middle(Holders):
                 if card.type == type:
                     return [pos, card]
 
-class Player(Holders, Error):
+class Middle(Holders):
+    "A class for the middle area"
+
+class Player(Holders):
     "A class for the players"
 
     def __init__(self, name):
@@ -194,65 +223,91 @@ class Player(Holders, Error):
             number = self.number(number)
             for myCard in self.cards:
                 if myCard.number == number:
-                    if myCard.type == type:
-                        self.to_taken(number, type)
-                        self.to_taken(myCard = myCard,
-                                        to_self = True)
-
+                    self.to_taken(number, type)
+                    i = self.cards.index(myCard)
+                    self.cards_taken.append(self.cards.pop(i))
+                    return
+            self.error("You do not have that card",
+                        self.lineon())
         else:
-            self.error("Not your turn")
+            self.error("Not your turn", self.lineon())
 
-            ##
-            cards_by_object([player1, game.middle, player2])
+    def take_add(self, number, type, *args):
+        # Number and type of your card followed by the cards
+        # to add and take
 
-    def take_add(self, *cards):
-        # Assumes the following format:
+        # Assumes the following format for args:
         # [Card number, Card type], [...], ...
         if self.isturn:
+            if self.check_card(number, type):
 
-            total = 0
-            for n in cards:
-                if self.number(n[0], True) != False:
-                    number = self.number(n[0], True)
-                    total+=number
-                else:
-                    # CHECK RULES FOR THE GAME:
-                    # Do King/Queen/Jack have values?
-                    self.error("""One of the cards
-is not a number card""")
-                    return
+                total = 0
+                for card in args:
+                    if self.number(card[0], True) != False:
+                        val = self.number(card[0], True)
+                        total+=val
+                    else:
+                        val = self.card_value(card[0])
+                        total+=val
 
-            for myCard in self.cards:
-                if myCard.number.isdigit():
-                    if total == int(myCard.number):
-                        for card in cards:
+                if self.number(number, True) != False:
+                    number = self.number(number, True)
+                    if number == total:
+                        for card in args:
                             self.to_taken(card[0], card[1])
-                            self.to_taken(myCard = myCard,
-                                            to_self = True)
-            self.error("""Those cards don't add up
-to any of your cards""")
+                        self.to_taken(number, type, True)
+                        return
+                else:
+                    if self.card_value(number) == total:
+                        for card in args:
+                            self.to_taken(card[0], card[1])
+                        self.to_taken(number, type, True)
+                        return
+                self.error("""Those cards don't add up
+to your card""", self.lineon())
+            else:
+                self.error("You do not have that card",
+                            self.lineon())
         else:
-            self.error("Not your turn")
+            self.error("Not your turn", self.lineon())
 
         ##
         cards_by_object([player1, game.middle, player2])
+        check_turn(game)
 
-    def to_taken(self, number = None, type = None,
-                        myCard = None, to_self = False):
+    def to_taken(self, number, type, to_self = False):
         if to_self:
             try:
-                i = self.cards.index(myCard)
-                self.cards_taken.append(self.cards.pop(i))
+                pos = self.find_card(number, type)[0]
+                self.cards_taken.append(self.cards.pop(pos))
+                self.game.next_turn()
+
+                ##
+                cards_by_object([player1,
+                        game.middle, player2])
+                check_turn(game)
+
+                return
             except:
-                self.error("""Unexpected...Your card was
-not found. Please panic""")
+                self.error("Your card was not found",
+                            self.lineon())
+                return
         try:
             pos = self.game.middle.find_card(number, type)[0]
             self.cards_taken.append(game.middle.cards.pop(pos))
             self.game.next_turn()
+
+            ##
+            cards_by_object([player1,
+                    game.middle, player2])
+            check_turn(game)
         except:
-            self.error("Card not found")
-            return
+            self.error("Card not found", self.lineon())
+
+    def check_card(self, number, type):
+        if self.find_card(number, type):
+            return True
+        return False
 
 
 ###############################################################
@@ -281,7 +336,8 @@ def check_turn(game):
         if player.isturn == True:
             print("It is " + player.name + "'s turn")
             return
-    Error.error(None, "Weird, it is no one's turn")
+    Error.error(None, "Weird, it is no one's turn",
+                self.lineon())
 
 # DEBUG: Convinient way to initialize a game with 4 players
 def init4p():
@@ -324,6 +380,20 @@ player1 = Player("Player 1")
 player2 = Player("Player 2")
 
 game = Game([player1, player2])
+
+player1.cards = [
+Card("King", "Diamonds"),
+Card("9", "Spades"),
+Card("8", "Hearts"),
+Card("6", "Clovers")
+]
+
+game.middle.cards = [
+Card("8", "Diamonds"),
+Card("9", "Clovers"),
+Card("Ace", "Spades"),
+Card("5", "Diamonds")
+]
 
 cards_by_object([player1, game.middle, player2])
 
