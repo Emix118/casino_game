@@ -85,7 +85,7 @@ class Game(Error):
     def next_turn(self):
         self.players[self.turn].isturn = False
 
-        if len(self.players) < self.turn + 1:
+        if len(self.players) - 1 < self.turn + 1:
             self.turn = 0
             self.players[self.turn].isturn = True
         else:
@@ -218,28 +218,14 @@ class Player(Holders):
         if self.game.most_cards()[1] == self:
             self.points+=3
 
-    def take(self, number, type):
-        if self.isturn:
-            number = self.number(number)
-            for myCard in self.cards:
-                if myCard.number == number:
-                    self.to_taken(number, type)
-                    i = self.cards.index(myCard)
-                    self.cards_taken.append(self.cards.pop(i))
-                    return
-            self.error("You do not have that card",
-                        self.lineon())
-        else:
-            self.error("Not your turn", self.lineon())
-
-    def take_add(self, number, type, *args):
+    def take(self, your_number, your_type, *args):
         # Number and type of your card followed by the cards
         # to add and take
 
         # Assumes the following format for args:
         # [Card number, Card type], [...], ...
         if self.isturn:
-            if self.check_card(number, type):
+            if self.check_card(your_number, your_type):
 
                 total = 0
                 for card in args:
@@ -250,20 +236,19 @@ class Player(Holders):
                         val = self.card_value(card[0])
                         total+=val
 
-                if self.number(number, True) != False:
-                    number = self.number(number, True)
-                    if number == total:
+                if self.number(your_number, True) != False:
+                    your_number = self.number(your_number,True)
+                    if your_number == total:
                         for card in args:
                             self.to_taken(card[0], card[1])
-                        self.to_taken(number, type, True)
-                        return
+                        self.to_taken(your_number,
+                                        your_type, True)
+                elif self.card_value(your_number) == total:
+                    for card in args:
+                        self.to_taken(card[0], card[1])
+                    self.to_taken(your_number, your_type,True)
                 else:
-                    if self.card_value(number) == total:
-                        for card in args:
-                            self.to_taken(card[0], card[1])
-                        self.to_taken(number, type, True)
-                        return
-                self.error("""Those cards don't add up
+                    self.error("""Those cards don't add up
 to your card""", self.lineon())
             else:
                 self.error("You do not have that card",
@@ -272,8 +257,19 @@ to your card""", self.lineon())
             self.error("Not your turn", self.lineon())
 
         ##
-        cards_by_object([player1, game.middle, player2])
+        cards_by_object([player1,
+                game.middle, player2])
         check_turn(game)
+
+    def trail(self, number, type):
+        # Place a card in middle without taking or stacking
+        if self.find_card(number, type):
+            pos = self.find_card(number, type)[0]
+            self.game.middle.cards.append(self.cards.pop(pos))
+        else:
+            self.error("You don't have that card",
+                        self.lineon())
+
 
     def to_taken(self, number, type, to_self = False):
         if to_self:
@@ -282,11 +278,6 @@ to your card""", self.lineon())
                 self.cards_taken.append(self.cards.pop(pos))
                 self.game.next_turn()
 
-                ##
-                cards_by_object([player1,
-                        game.middle, player2])
-                check_turn(game)
-
                 return
             except:
                 self.error("Your card was not found",
@@ -294,13 +285,10 @@ to your card""", self.lineon())
                 return
         try:
             pos = self.game.middle.find_card(number, type)[0]
-            self.cards_taken.append(game.middle.cards.pop(pos))
+            self.cards_taken.append(
+                    self.game.middle.cards.pop(pos))
             self.game.next_turn()
 
-            ##
-            cards_by_object([player1,
-                    game.middle, player2])
-            check_turn(game)
         except:
             self.error("Card not found", self.lineon())
 
@@ -339,42 +327,19 @@ def check_turn(game):
     Error.error(None, "Weird, it is no one's turn",
                 self.lineon())
 
-# DEBUG: Convinient way to initialize a game with 4 players
-def init4p():
-    player1 = Player("Player 1")
-    player2 = Player("Player 2")
-    player3 = Player("Player 3")
-    player4 = Player("Player 4")
 
-    game = Game([player1, player2, player3, player4])
-
-    cards_by_object([player1, player2,
-                    game.middle, player3,
-                    player4])
-
-    check_turn(game)
-
-# DEBUG: Convinient way to initialize a game with two players
-def init2p():
-    player1 = Player("Player 1")
-    player2 = Player("Player 2")
-
-    game = Game([player1, player2])
-
-    cards_by_object([player1, game.middle, player2])
-
-    check_turn(game)
-
-    # player1.cards_taken = [Card("Ace", "Clovers")]
-    # player2.cards_taken = [Card("Ace", "Spades")]
-    # # player3.cards_taken = [1,2,3]
-    # # player4.cards_taken = [1,2,3,4,5,6]
+    # player1 = Player("Player 1")
+    # player2 = Player("Player 2")
+    # player3 = Player("Player 3")
+    # player4 = Player("Player 4")
     #
-    # for player in game.players:
-    #     player.update_points()
-    #     print(player.points, player.name)
+    # game = Game([player1, player2, player3, player4])
+    #
+    # cards_by_object([player1, player2,
+    #                 game.middle, player3,
+    #                 player4])
+    #
 
-# init2p()
 
 player1 = Player("Player 1")
 player2 = Player("Player 2")
