@@ -19,6 +19,7 @@ class Card():
         self.number = number
         self.type = type
         self.stack = []
+        self.call = False
 
 class Game(Error):
     """A class to manage the essentials of the game"""
@@ -171,8 +172,7 @@ class Holders(Error):
             if value == 1 or value == 14:
                 return value
             else:
-                self.error("Incorrect value passed in",
-                            self.lineon())
+                self.error("Incorrect value passed in", self.lineon())
                 self.card_value(number)
         return 10+i
 
@@ -227,47 +227,60 @@ class Player(Holders):
 
     def take(self, your_number, your_type, *args):
         # Number and type of your card followed by the cards
-        # to add and take
+        # to add and take (accept single cards)
 
         # Assumes the following format for args:
         # [Card number, Card type], [...], ...
         if self.isturn:
             if self.check_card(your_number, your_type):
+
+                found = []
+                for card in args:
+                    if self.game.middle.check_card(card[0], card[1]):
+
+                        mid = self.game.middle.find_card(
+                                    card[0], card[1])[1]
+                        found.append(mid)
+                    else:
+                        self.error("One or more of those" +
+" cards were not found in the middle area", self.lineon())
+                        return
+
                 # Added cardLst to be able to add the stacked
                 # cards since tuples are not mutable
                 cardLst = []
 
                 total = 0
                 stacked = []
-                for card in args:
+
+                for mid in found:
                     try:
-                        if self.game.middle.check_card(
-                                        card[0], card[1]):
-                            mid = self.game.middle.find_card(
-                                        card[0], card[1])[1]
-                            if mid.stack:
-                                if mid not in stacked:
-                                    stacked.append(mid)
-                                    stacked.append(mid.stack)
+                        if mid.stack and mid.call:
+                            if [x.call for x in found if x.call]:
+                                total = self.card_value(mid.number)
+                                for e in mid.stack:
+                                    cardLst.append(e)
+                                cardLst.append(mid)
+                                break
+                        elif mid.stack:
+                            if mid not in stacked:
+                                stacked.append(mid)
+                                stacked.append(mid.stack)
 
-                                    total+=self.card_value(
-                                                    mid.number)
+                                total+=self.card_value(mid.number)
 
-                                    for e in mid.stack:
-                                        total+=self.card_value(
-                                                e.number)
-
-                                    cardLst.append(mid)
-                                    for e in mid.stack:
-                                        cardLst.append(e)
-                            else:
-                                total+=self.card_value(card[0])
+                                for e in mid.stack:
+                                    total+=self.card_value(e.number)
 
                                 cardLst.append(mid)
+                                for e in mid.stack:
+                                    cardLst.append(e)
                         else:
-                            self.error("One or more of those" +
-    " cards were not found in the middle area", self.lineon())
-                            return
+                            ph = self.game.middle.find_card(
+                                            card[0], card[1])[1]
+                            total+=self.card_value(ph.number)
+
+                            cardLst.append(mid)
                     except TypeError:
                         self.error("There was an error..." +
                         "Are you sure you used the correct" +
@@ -277,14 +290,12 @@ class Player(Holders):
                 if self.card_value(your_number) == total:
                     for card in cardLst:
                         self.to_taken(card.number, card.type)
-                    self.to_taken(your_number,
-                                    your_type, True)
+                    self.to_taken(your_number, your_type, True)
 
                     self.game.next_turn()
 
                     ##
-                    cards_by_object([player1,
-                            game.middle, player2])
+                    cards_by_object([player1, game.middle, player2])
 
                     check_turn(game)
 
@@ -292,8 +303,7 @@ class Player(Holders):
                     self.error("Those cards don't add up" +
                         " to your card", self.lineon())
             else:
-                self.error("You do not have that card",
-                            self.lineon())
+                self.error("You do not have that card", self.lineon())
         else:
             self.error("Not your turn", self.lineon())
 
@@ -303,18 +313,15 @@ class Player(Holders):
         if self.isturn:
             if self.check_card(number, type):
                 pos = self.find_card(number, type)[0]
-                self.game.middle.cards.append(
-                                self.cards.pop(pos))
+                self.game.middle.cards.append(self.cards.pop(pos))
             else:
-                self.error("You don't have that card",
-                            self.lineon())
+                self.error("You don't have that card", self.lineon())
                 return
 
             self.game.next_turn()
 
             ##
-            cards_by_object([player1,
-                    game.middle, player2])
+            cards_by_object([player1, game.middle, player2])
             check_turn(game)
         else:
             self.error("Not your turn", self.lineon())
@@ -325,40 +332,36 @@ class Player(Holders):
             if self.check_card(your_number, your_type):
                 if self.game.middle.check_card(number, type):
 
-                    myCard = self.find_card(
-                                    your_number, your_type)
+                    pos, myCard = self.find_card(your_number, your_type)
 
                     midCard = self.game.middle.find_card(
-                                            number, type)[1]
+                                                number, type)[1]
 
-                    val = self.card_value(your_number)
+                    val = self.card_value(myCard.number)
 
                     if midCard.stack:
                         for n in midCard.stack:
                             val+=self.card_value(n.number)
-                    else:
-                        val+=self.card_value(number)
+                    val+=self.card_value(midCard.number)
 
                     for card in self.cards:
                         if self.card_value(card.number) == val:
 
-                            for e in myCard[1].stack:
-                                e.stack.append(midCard)
                             for e in midCard.stack:
-                                e.stack.append(myCard[1])
-                                myCard[1].stack.append(e)
+                                e.stack.append(myCard)
+                                myCard.stack.append(e)
 
-                            myCard[1].stack.append(midCard)
-                            midCard.stack.append(myCard[1])
+                            myCard.stack.append(midCard)
+                            midCard.stack.append(myCard)
 
                             self.game.middle.cards.append(
-                                    self.cards.pop(myCard[0]))
+                                    self.cards.pop(pos))
 
                             self.game.next_turn()
 
                             ##
                             cards_by_object([player1,
-                                    game.middle, player2])
+                                            game.middle, player2])
                             check_turn(game)
 
                             return
@@ -368,8 +371,61 @@ class Player(Holders):
                     self.error("That card was not found"+
                     " in the middle", self.lineon())
             else:
-                self.error("Your card was not found",
-                            self.lineon())
+                self.error("Your card was not found", self.lineon())
+        else:
+            self.error("Not your turn", self.lineon())
+
+    def combine(self, your_number, your_type, number, type):
+        # Stack two cards of same value and keep that value
+        if self.isturn:
+            if self.check_card(your_number, your_type):
+                if self.game.middle.check_card(number, type):
+
+                    pos, myCard = self.find_card(your_number, your_type)
+
+                    midCard = self.game.middle.find_card(
+                                            number, type)[1]
+
+                    myval = self.card_value(myCard.number)
+                    midval= self.card_value(midCard.number)
+
+                    if myval == midval:
+                        for card in self.cards:
+                            val = self.card_value(card.number)
+                            if val == myval and card != myCard:
+
+                                for e in midCard.stack:
+                                    e.stack.append(myCard)
+                                    myCard.stack.append(e)
+                                    e.call = True
+
+                                myCard.stack.append(midCard)
+                                myCard.call = True
+                                midCard.stack.append(myCard)
+                                midCard.call = True
+
+                                self.game.middle.cards.append(
+                                      self.cards.pop(pos))
+
+                                self.game.next_turn()
+
+                                ##
+                                cards_by_object([player1,
+                                        game.middle, player2])
+                                check_turn(game)
+
+                                return
+
+                        self.error("You dont have an extra"+
+                        " card to later collect this", self.lineon())
+                    else:
+                        self.error("Those cards don't have" +
+                        " the same value", self.lineon())
+                else:
+                    self.error("That card was not found"+
+                    " in the middle", self.lineon())
+            else:
+                self.error("Your card was not found", self.lineon())
         else:
             self.error("Not your turn", self.lineon())
 
@@ -378,20 +434,15 @@ class Player(Holders):
             try:
                 pos = self.find_card(number, type)[0]
                 self.cards_taken.append(self.cards.pop(pos))
-
                 return
             except:
-                self.error("Your card was not found",
-                            self.lineon())
+                self.error("Your card was not found", self.lineon())
                 return
         try:
             pos = self.game.middle.find_card(number, type)[0]
-            self.cards_taken.append(
-                    self.game.middle.cards.pop(pos))
-
+            self.cards_taken.append(self.game.middle.cards.pop(pos))
         except:
             self.error("Card not found", self.lineon())
-
 
 ###############################################################
 """Since its based on console, these functions are mostly used
@@ -454,15 +505,15 @@ game = Game([player1, player2])
 player1.cards = [
 Card("5", "Diamonds"),
 Card("2", "Spades"),
-Card("2", "Hearts"),
-Card("7", "Clovers")
+Card("Jack", "Hearts"),
+Card("5", "Clovers")
 ]
 
 game.middle.cards = [
-Card("3", "Diamonds"),
+Card("2", "Diamonds"),
 Card("9", "Clovers"),
 Card("Ace", "Spades"),
-Card("5", "Diamonds")
+Card("5", "Hearts")
 ]
 
 cards_by_object([player1, game.middle, player2])
