@@ -1,205 +1,8 @@
-import random
-import sys
-import inspect
+from holders import Holders
+
 import itertools
 
-class Error():
-    def error(self, message, line, stop = False):
-        print('ERROR: ' + message, line)
-        if stop:
-            sys.exit()
-
-    def lineon(self):
-        # Determines the current line in the program
-        return inspect.currentframe().f_back.f_lineno
-
-class Card():
-    """A class to create cards with a number and type"""
-
-    def __init__(self, number, type):
-        self.number = number
-        self.type = type
-        self.stack = []
-        self.call = False
-
-class Game(Error):
-    """A class to manage the essentials of the game"""
-
-    types = ['Diamonds', 'Spades', 'Clovers', 'Hearts']
-    numbers = ['Ace', 'Jack', 'Queen', 'King']
-
-    def __init__(self, players):
-        if len(players) > 4:
-            self.error("Too many players", self.lineon(), True)
-
-        self.players = players
-
-        self.deck = []
-        self.middle = Middle()
-
-        self.set_players_game()
-        self.players[0].isturn = True
-        self.turn = 0
-
-        self.build_deck()
-        self.deal_cards()
-        self.deal_middle()
-
-    def set_players_game(self):
-        # Allowing all players to access paramaters
-        # from the game class without the need to inherit
-        for player in self.players:
-            player.game = self
-
-    def build_deck(self):
-        # Create a standard 52-card deck using the Card class
-        # and shuffle it
-
-        # Adding the numbers to numbers array
-        for n in range(2,11):
-            self.numbers.insert(n, str(n))
-
-        for t in self.types:
-            for n in self.numbers:
-                self.deck.append(Card(n, t))
-        random.shuffle(self.deck)
-
-    def deal_cards(self):
-        # Dealing the cards in a 2-2 format to the
-        # players and middle area
-
-        # NOTE: Since the computer is dealing the cards
-        # there is no need to have a dealer
-
-        # Dealing two cards to each player twice
-        for i in range(0, 2):
-            for player in self.players:
-                for i in range(0, 2):
-                    player.cards.append(self.deck.pop())
-
-    def deal_middle(self):
-            # Placing 4 cards in middle
-
-            # Separte from deal cards because no cards
-            # are placed in the middle after each round
-            for i in range(0, 4):
-                self.middle.cards.append(self.deck.pop())
-
-    def next_turn(self):
-        self.players[self.turn].isturn = False
-
-        if len(self.players) - 1 < self.turn + 1:
-            self.turn = 0
-            self.players[self.turn].isturn = True
-        else:
-            # self.turn+=1
-            self.players[self.turn].isturn = True
-
-    def most_cards(self):
-        current_lead = [0, None]
-        for player in self.players:
-            if len(player.cards_taken) >= current_lead[0]:
-                if len(player.cards_taken) == current_lead[0]:
-                    amount = len(player.cards_taken)
-                    current_lead = [amount, None]
-                else:
-                    amount = len(player.cards_taken)
-                    current_lead = [amount, player]
-        return current_lead
-
-    def most_spades(self):
-        current_lead = [0, None]
-        for player in self.players:
-            spades = 0
-            for card in player.cards_taken:
-                if card.type == 'Spades':
-                    spades+=1
-            if spades >= current_lead[0]:
-                if spades == current_lead[0]:
-                    current_lead = [spades, None]
-                else:
-                    current_lead = [spades, player]
-        return current_lead
-
-
-    def check_points():
-        for player in self.players:
-            if player.points >= 21:
-                self.end_game()
-            else:
-                self.next_round()
-
-    def end_game(self):
-        pass
-
-    def next_round():
-        pass
-
-class Holders(Error):
-    "A class encompassing the players and the middle area"
-
-    def __init__(self):
-        self.cards = []
-
-    def number(self, number, to_int = False):
-        if to_int:
-            if isinstance(number, str):
-                if number.isdigit():
-                    return int(number)
-                else:
-                    return False
-            else:
-                return number
-        else:
-            if isinstance(number, int):
-                return str(number)
-            else:
-                return number
-
-    def card_value(self, number):
-        numbers = ['Ace', 'Jack', 'Queen', 'King']
-        more = ['A', 'J', 'Q', 'K']
-        if number in numbers:
-            i = numbers.index(number)
-        elif number in more:
-            i = more.index(number)
-        else:
-            if self.number(number, True) != False:
-                number = self.number(number, True)
-                return number
-
-        if i == 0:
-            value=int(input("Pick the value of your Ace:"))
-            if value == 1 or value == 14:
-                return value
-            else:
-                self.error("Incorrect value passed in", self.lineon())
-                self.card_value(number)
-        return 10+i
-
-    def stack_value(self, card):
-        lst = [self.card_value(x.number) for x in card.stack]
-        if card.call:
-            if lst[1:] == lst[:-1]:
-                return lst[0]
-        return sum(lst)
-
-    def find_card(self, number, type):
-        number = self.number(number)
-        pos = -1
-        for card in self.cards:
-            pos+=1
-            if card.number.lower()[0] == number.lower()[0]:
-                if card.type.lower()[0] == type.lower()[0]:
-                    return [pos, card]
-
-    def check_card(self, number, type):
-        if self.find_card(number, type):
-            return True
-        return False
-
-class Middle(Holders):
-    "A class for the middle area"
+players = []
 
 class Player(Holders):
     "A class for the players"
@@ -211,9 +14,7 @@ class Player(Holders):
         self.points = 0
         self.isturn = False
 
-        # For access to the current game's list
-        # of players to compare
-        self.game = None
+        players.append(self)
 
     def update_points(self):
 
@@ -227,10 +28,10 @@ class Player(Holders):
             if card.number == 'Ace':
                 self.points+=1
 
-        if self.game.most_spades()[1] == self:
+        if game.most_spades()[1] == self:
             self.points+=1
 
-        if self.game.most_cards()[1] == self:
+        if game.most_cards()[1] == self:
             self.points+=3
 
     def take(self, your_number, your_type, *args):
@@ -249,10 +50,9 @@ class Player(Holders):
                 found = []
                 for card in args:
                     try:
-                        if self.game.middle.check_card(card[0], card[1]):
+                        if game.middle.check_card(card[0], card[1]):
 
-                            mid = self.game.middle.find_card(
-                                        card[0], card[1])[1]
+                            mid = game.middle.find_card(card[0], card[1])[1]
                             found.append(mid)
                         else:
                             self.error("One or more of those" +
@@ -343,11 +143,10 @@ class Player(Holders):
                 self.to_taken(card.number, card.type)
             self.to_taken(your_number, your_type, True)
 
-            self.game.next_turn()
+            game.next_turn()
 
             ##
-            cards_by_object([player1, game.middle, player2])
-
+            cards_by_object([players[0], game.middle, players[1]])
             check_turn(game)
 
     def trail(self, number, type):
@@ -355,16 +154,17 @@ class Player(Holders):
         if self.isturn:
             if self.check_card(number, type):
                 pos = self.find_card(number, type)[0]
-                self.game.middle.cards.append(self.cards.pop(pos))
+                game.middle.cards.append(self.cards.pop(pos))
             else:
                 self.error("You don't have that card", self.lineon())
                 return
 
-            self.game.next_turn()
+            game.next_turn()
 
             ##
-            cards_by_object([player1, game.middle, player2])
+            cards_by_object([players[0], game.middle, players[1]])
             check_turn(game)
+
         else:
             self.error("Not your turn", self.lineon())
 
@@ -372,11 +172,11 @@ class Player(Holders):
         # Stack a card on top of another
         if self.isturn:
             if self.check_card(your_number, your_type):
-                if self.game.middle.check_card(number, type):
+                if game.middle.check_card(number, type):
 
                     pos, myCard = self.find_card(your_number, your_type)
 
-                    midCard = self.game.middle.find_card(
+                    midCard = game.middle.find_card(
                                                 number, type)[1]
 
                     val = self.card_value(myCard.number)
@@ -396,17 +196,18 @@ class Player(Holders):
                             myCard.stack.append(midCard)
                             midCard.stack.append(myCard)
 
-                            self.game.middle.cards.append(
+                            game.middle.cards.append(
                                     self.cards.pop(pos))
 
-                            self.game.next_turn()
+                            game.next_turn()
 
                             ##
-                            cards_by_object([player1,
-                                            game.middle, player2])
+                            cards_by_object([players[0],
+                                            game.middle, players[1]])
                             check_turn(game)
 
                             return
+
                     self.error("You don't have a card to" +
                     " later collect this stack", self.lineon())
                 else:
@@ -421,11 +222,11 @@ class Player(Holders):
     #     # Stack two cards of same value and keep that value
     #     if self.isturn:
     #         if self.check_card(your_number, your_type):
-    #             if self.game.middle.check_card(number, type):
+    #             if game.middle.check_card(number, type):
     #
     #                 pos, myCard = self.find_card(your_number, your_type)
     #
-    #                 midCard = self.game.middle.find_card(
+    #                 midCard = game.middle.find_card(
     #                                         number, type)[1]
     #
     #                 myval = self.card_value(myCard.number)
@@ -446,10 +247,10 @@ class Player(Holders):
     #                             midCard.stack.append(myCard)
     #                             midCard.call = True
     #
-    #                             self.game.middle.cards.append(
+    #                             game.middle.cards.append(
     #                                   self.cards.pop(pos))
     #
-    #                             self.game.next_turn()
+    #                             game.next_turn()
     #
     #                             ##
     #                             cards_by_object([player1,
@@ -482,9 +283,9 @@ class Player(Holders):
                 found = []
                 for card in args:
                     try:
-                        if self.game.middle.check_card(card[0], card[1]):
+                        if game.middle.check_card(card[0], card[1]):
 
-                            found.append(self.game.middle.find_card(
+                            found.append(game.middle.find_card(
                                                 card[0], card[1])[1])
                         else:
                             self.error("", self.lineon())
@@ -530,10 +331,10 @@ class Player(Holders):
                 #             midCard.stack.append(myCard)
                 #             midCard.call = True
                 #
-                #             self.game.middle.cards.append(
+                #             game.middle.cards.append(
                 #                   self.cards.pop(pos))
                 #
-                #             self.game.next_turn()
+                #             game.next_turn()
                 #
                 #             ##
                 #             cards_by_object([player1,
@@ -558,57 +359,22 @@ class Player(Holders):
                 self.error("Your card was not found", self.lineon())
                 return
         try:
-            pos = self.game.middle.find_card(number, type)[0]
-            self.cards_taken.append(self.game.middle.cards.pop(pos))
+            pos = game.middle.find_card(number, type)[0]
+            self.cards_taken.append(game.middle.cards.pop(pos))
         except:
             self.error("Card not found", self.lineon())
 
+from game import Game
+game = Game()
+
+from debug import debug
 ###############################################################
-"""Since its based on console, these functions are mostly used
-for displaying useful information"""
-
-# DEBUG: function to print out each card's number and type
-def print_cards(object):
-    stacked = []
-    for card in object.cards:
-        if card.stack:
-            if not card in stacked:
-
-                print("{",card.number,"of",card.type)
-
-                for e in card.stack:
-                    stacked.append(e)
-                    print(e.number,"of",e.type,"}")
-        else:
-            print(card.number, "of", card.type)
-
-# DEBUG: function to print out the cards of a list of objects
-# in an organized fashion
-def cards_by_object(objects):
-    for o in objects:
-        if isinstance(o, Player):
-            print("--------------" + o.name)
-        else:
-            print("--------------Middle")
-        print_cards(o)
-    print("--------------")
-
-# DEBUG: function to print out who's turn it is
-def check_turn(game):
-    for player in game.players:
-        if player.isturn == True:
-            print("It is " + player.name + "'s turn")
-            return
-    Error.error(None, "Weird, it is no one's turn",
-                self.lineon())
-
 
     # player1 = Player("Player 1")
     # player2 = Player("Player 2")
     # player3 = Player("Player 3")
     # player4 = Player("Player 4")
     #
-    # game = Game([player1, player2, player3, player4])
     #
     # cards_by_object([player1, player2,
     #                 game.middle, player3,
@@ -616,26 +382,26 @@ def check_turn(game):
     #
 
 
+
+# players[0].cards = [
+# Card("5", "Hearts"),
+# Card("2", "Spades"),
+# Card("7", "Hearts"),
+# Card("5", "Clovers")
+# ]
+
+# game.middle.cards = [
+# Card("5", "Diamonds"),
+# Card("3", "Diamonds"),
+# Card("2", "Clovers"),
+# Card("2", "Diamonds"),
+# Card("3", "Hearts")
+# ]
+
 player1 = Player("Player 1")
 player2 = Player("Player 2")
 
-game = Game([player1, player2])
+debug = debug()
+debug.cards_by_object([player1, game.middle, player2])
 
-player1.cards = [
-Card("5", "Hearts"),
-Card("2", "Spades"),
-Card("7", "Hearts"),
-Card("5", "Clovers")
-]
-
-game.middle.cards = [
-Card("5", "Diamonds"),
-Card("3", "Diamonds"),
-Card("2", "Clovers"),
-Card("2", "Diamonds"),
-Card("3", "Hearts")
-]
-
-cards_by_object([player1, game.middle, player2])
-
-check_turn(game)
+debug.check_turn()
