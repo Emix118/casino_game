@@ -169,109 +169,77 @@ class Player(Holders):
         else:
             self.error("Not your turn", self.lineon())
 
-    def stack(self, your_number, your_type, number, type):
-        # Stack a card on top of another
+    def stack(self, your_number, your_type, *args):
+        # Stack a card on top of another adding their values
         if self.isturn:
             if self.check_card(your_number, your_type):
-                if game.middle.check_card(number, type):
 
-                    pos, myCard = self.find_card(your_number, your_type)
+                found = []
+                for card in args:
+                    try:
+                        if game.middle.check_card(card[0], card[1]):
 
-                    midCard = game.middle.find_card(
-                                                number, type)[1]
+                            found.append(game.middle.find_card(
+                                                card[0], card[1])[1])
+                        else:
+                            self.error("One or more of those cards"+
+                            "were not found in the middle", self.lineon())
+                            return
+                    except:
+                        self.error("There was an error..." +
+                        "Are you sure you used the correct" +
+                        " syntax?", self.lineon())
+                        return
 
-                    val = self.card_value(myCard.number)
+                pos, myCard = self.find_card(your_number, your_type)
 
+                val = self.card_value(myCard.number)
+
+                for midCard in found:
+                    if midCard.call:
+                        self.error("You cannot stack a build combination"+
+                        "on top of a call combination", self.lineon())
+                        return
                     if midCard.stack:
                         for n in midCard.stack:
-                            val+=self.card_value(n.number)
+                            val+=self.stack_value(n)
                     val+=self.card_value(midCard.number)
 
-                    for card in self.cards:
-                        if self.card_value(card.number) == val:
+                for c in self.cards:
+                    if self.card_value(c.number) == val:
 
-                            for e in midCard.stack:
-                                e.stack.append(myCard)
-                                myCard.stack.append(e)
-
+                        for midCard in found:
+                            if midCard.stack:
+                                for e in midCard.stack:
+                                    e.stack.append(myCard)
+                                    myCard.stack.append(e)
                             myCard.stack.append(midCard)
                             midCard.stack.append(myCard)
 
-                            game.middle.cards.append(
-                                    self.cards.pop(pos))
+                            for e in found:
+                                if not e in midCard.stack and e != midCard:
+                                    midCard.stack.append(e)
 
-                            game.next_turn()
+                        game.middle.cards.append(
+                                self.cards.pop(pos))
 
-                            ##
-                            cards_by_object(players, game.middle)
-                            check_turn(players)
+                        game.next_turn()
 
-                            return
+                        ##
+                        cards_by_object(players, game.middle)
+                        check_turn(players)
 
-                    self.error("You don't have a card to" +
-                    " later collect this stack", self.lineon())
-                else:
-                    self.error("That card was not found"+
-                    " in the middle", self.lineon())
+                        return
+
+                self.error("You don't have a card to" +
+                " later collect this stack", self.lineon())
             else:
                 self.error("Your card was not found", self.lineon())
         else:
             self.error("Not your turn", self.lineon())
 
-    # def combine(self, your_number, your_type, number, type):
-    #     # Stack two cards of same value and keep that value
-    #     if self.isturn:
-    #         if self.check_card(your_number, your_type):
-    #             if game.middle.check_card(number, type):
-    #
-    #                 pos, myCard = self.find_card(your_number, your_type)
-    #
-    #                 midCard = game.middle.find_card(
-    #                                         number, type)[1]
-    #
-    #                 myval = self.card_value(myCard.number)
-    #                 midval= self.card_value(midCard.number)
-    #
-    #                 if myval == midval:
-    #                     for card in self.cards:
-    #                         val = self.card_value(card.number)
-    #                         if val == myval and card != myCard:
-    #
-    #                             for e in midCard.stack:
-    #                                 e.stack.append(myCard)
-    #                                 myCard.stack.append(e)
-    #                                 e.call = True
-    #
-    #                             myCard.stack.append(midCard)
-    #                             myCard.call = True
-    #                             midCard.stack.append(myCard)
-    #                             midCard.call = True
-    #
-    #                             game.middle.cards.append(
-    #                                   self.cards.pop(pos))
-    #
-    #                             game.next_turn()
-    #
-    #                             ##
-    #                             cards_by_object(players, game.middle)
-    #                             check_turn(game)
-    #
-    #                             return
-    #
-    #                     self.error("You dont have an extra"+
-    #                     " card to later collect this", self.lineon())
-    #                 else:
-    #                     self.error("Those cards don't have" +
-    #                     " the same value", self.lineon())
-    #             else:
-    #                 self.error("That card was not found"+
-    #                 " in the middle", self.lineon())
-    #         else:
-    #             self.error("Your card was not found", self.lineon())
-    #     else:
-    #         self.error("Not your turn", self.lineon())
-
     def combine(self, your_number, your_type, *args):
+        # Stack a card on top of another but keep the original value
         if self.isturn:
             if self.check_card(your_number, your_type):
 
@@ -287,10 +255,13 @@ class Player(Holders):
                             found.append(game.middle.find_card(
                                                 card[0], card[1])[1])
                         else:
-                            self.error("", self.lineon())
+                            self.error("One or more of those cards"+
+                            "were not found in the middle", self.lineon())
                             return
                     except:
-                        self.error("", self.lineon())
+                        self.error("There was an error..." +
+                        "Are you sure you used the correct" +
+                        " syntax?", self.lineon())
                         return
 
                 of_value = [c for c in found
@@ -318,9 +289,9 @@ class Player(Holders):
 
                 if of_value:
                     if not total:
-                        for card in self.cards:
-                            valHand = self.card_value(card.number)
-                            if valHand == val and card != myCard:
+                        for c in self.cards:
+                            valHand = self.card_value(c.number)
+                            if valHand == val and c != myCard:
 
                                 for card in of_value:
                                     if card.stack:
@@ -358,9 +329,9 @@ class Player(Holders):
                     self.error("None of those cards match your card",
                      self.lineon())
             else:
-                self.error("", self.lineon())
+                self.error("You do not have that card", self.lineon())
         else:
-            self.error("", self.lineon())
+            self.error("Not your turn", self.lineon())
 
 
 
