@@ -45,8 +45,7 @@ class Holders(Error):
     def stack_value(self, card):
         lst = [self.card_value(x.number) for x in card.stack]
         if card.call:
-            if lst[1:] == lst[:-1]:
-                return lst[0]
+            return max(lst)
         return sum(lst)
 
     def find_card(self, number, type):
@@ -62,3 +61,17 @@ class Holders(Error):
         if self.find_card(number, type):
             return True
         return False
+
+"""
+
+player = players[0]
+player.combine(5, "s", [5, "d"], [3, "d"], [2, "c"], [2, "d"], [3, "h"])
+
+from player import game
+
+cards = [x for x in game.middle.cards if x.call]
+
+for e in cards:
+	player.stack_value(e)
+
+"""
