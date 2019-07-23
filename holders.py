@@ -21,29 +21,39 @@ class Holders(Error):
             else:
                 return number
 
-    def card_value(self, number):
-        numbers = ['Ace', 'Jack', 'Queen', 'King']
-        more = ['A', 'J', 'Q', 'K']
-        if number in numbers:
-            i = numbers.index(number)
-        elif number in more:
-            i = more.index(number)
-        else:
-            if self.number(number, True) != False:
-                number = self.number(number, True)
-                return number
+    def card_value(self, card, reset = False):
+        number  = card.number
 
-        if i == 0:
-            value=int(input("Pick the value of your Ace:"))
-            if value == 1 or value == 14:
-                return value
+        if not card.value or reset:
+            numbers = ['Ace', 'Jack', 'Queen', 'King']
+            more = ['A', 'J', 'Q', 'K']
+            lower = ['a', 'j', 'q', 'k']
+            if number in numbers:
+                i = numbers.index(number)
+            elif number in more:
+                i = more.index(number)
+            elif number in lower:
+                i = lower.index(number)
+            elif self.number(number, True) != False:
+                    number = self.number(number, True)
+                    return number
             else:
-                self.error("Incorrect value passed in", self.lineon())
-                self.card_value(number)
-        return 10+i
+                self.error("Incorrect format used", self.lineon())
+
+            if i == 0:
+                value=int(input("Pick the value of your Ace:"))
+                if value == 1 or value == 14:
+                    card.value = value
+                    return value
+                else:
+                    self.error("Incorrect value passed in", self.lineon())
+                    self.card_value(number)
+            return 10+i
+        else:
+            return card.value
 
     def stack_value(self, card):
-        lst = [self.card_value(x.number) for x in card.stack]
+        lst = [self.card_value(x) for x in card.stack]
         if card.call:
             return max(lst)
         return sum(lst)

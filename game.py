@@ -24,7 +24,7 @@ class Game(Error):
 
         self.build_deck()
         self.deal_cards()
-        self.deal_middle()
+        self.deal_middle(4)
 
     def build_deck(self):
         # Create a standard 52-card deck using the Card class
@@ -49,15 +49,20 @@ class Game(Error):
         # Dealing two cards to each player twice
         for i in range(0, 2):
             for player in players:
-                for i in range(0, 2):
-                    player.cards.append(self.deck.pop())
+                self.deal(player, 2)
+                # for i in range(0, 2):
+                #     player.cards.append(self.deck.pop())
 
-    def deal_middle(self):
+    def deal(self, player, amount):
+        for n in range(amount):
+            player.cards.append(self.deck.pop())
+
+    def deal_middle(self, amount):
             # Placing 4 cards in middle
 
             # Separte from deal cards because no cards
             # are placed in the middle after each round
-            for i in range(0, 4):
+            for i in range(amount):
                 self.middle.cards.append(self.deck.pop())
 
     def next_turn(self):
@@ -69,6 +74,7 @@ class Game(Error):
         else:
             self.turn+=1
             players[self.turn].isturn = True
+        self.next_round()
 
     def most_cards(self):
         current_lead = [0, None]
@@ -104,8 +110,22 @@ class Game(Error):
             else:
                 self.next_round()
 
-    def end_game(self):
-        pass
+    def next_round(self):
+        if all([True if not player.cards else False for player in players]):
+            if self.deck:
+                # Couldn't find online what to do with the extra cards to i just
+                # dealt as many as possible to each player and then placed the rest
+                # in the middle
+                if len(self.deck) < 4 * len(players):
+                    while len(self.deck) % len(players) == 0:
+                        for player in players:
+                            self.deal(player, 1)
+                    while self.deck:
+                        self.deal_middle(1)
+                else:
+                    self.deal_cards()
+            else:
+                self.next_set()
 
-    def next_round():
+    def next_set(self):
         pass

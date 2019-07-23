@@ -46,7 +46,7 @@ class Player(Holders):
 
                 myCard = self.find_card(your_number, your_type)[1]
 
-                val = self.card_value(myCard.number)
+                val = self.card_value(myCard, True)
 
                 found = []
                 for card in args:
@@ -71,13 +71,13 @@ class Player(Holders):
                 stacked = []
 
                 # Check if all the cards have the same value as your card
-                if all([True if self.card_value(x.number) == val
+                if all([True if self.card_value(x) == val
                         else False for x in found]):
                     for e in found:
                         if e.stack:
                             # check if there's a stack with a card of
                             # a different value
-                            if not all([True if self.card_value(c.number)==val
+                            if not all([True if self.card_value(c) == val
                                     else False for c in e.stack]):
 
                                         frmt = [[c.number,c.type]
@@ -92,7 +92,11 @@ class Player(Holders):
                             else:
                                 self.take_success(your_number, your_type,
                                             found+e.stack)
-                            return
+                                return
+                    self.take_success(your_number, your_type, found)
+
+                elif all([True if (self.stack and self.stack_value(x) == val) or (self.card_value(x) == val else False for x in found)]):
+                    found.extend([x.stack for x in found if x.stack])
                     self.take_success(your_number, your_type, found)
                 else:
                     for mid in found:
@@ -112,7 +116,7 @@ class Player(Holders):
                                         if e not in stacked:
                                             stacked.append(e)
 
-                                    total+=self.card_value(mid.number)
+                                    total+=self.card_value(mid)
 
                                     total+=self.stack_value(mid)
 
@@ -120,7 +124,7 @@ class Player(Holders):
                                     for e in mid.stack:
                                         cardLst.append(e)
                             else:
-                                total+=self.card_value(mid.number)
+                                total+=self.card_value(mid)
 
                                 cardLst.append(mid)
                         except TypeError:
@@ -129,7 +133,7 @@ class Player(Holders):
                             " syntax?", self.lineon())
                             return
 
-                    if self.card_value(your_number) == total:
+                    if self.card_value(myCard) == total:
                         self.take_success(your_number, your_type, cardLst)
                     else:
                         self.error("Those cards don't add up" +
@@ -193,7 +197,7 @@ class Player(Holders):
 
                 pos, myCard = self.find_card(your_number, your_type)
 
-                val = self.card_value(myCard.number)
+                val = self.card_value(myCard, True)
 
                 for midCard in found:
                     if midCard.call:
@@ -203,10 +207,10 @@ class Player(Holders):
                     if midCard.stack:
                         for n in midCard.stack:
                             val+=self.stack_value(n)
-                    val+=self.card_value(midCard.number)
+                    val+=self.card_value(midCard)
 
                 for c in self.cards:
-                    if self.card_value(c.number) == val:
+                    if self.card_value(c) == val:
 
                         for midCard in found:
                             if midCard.stack:
@@ -245,8 +249,6 @@ class Player(Holders):
 
                 pos, myCard = self.find_card(your_number, your_type)
 
-                val = self.card_value(myCard.number)
-
                 found = []
                 for card in args:
                     try:
@@ -264,8 +266,10 @@ class Player(Holders):
                         " syntax?", self.lineon())
                         return
 
-                of_value = [c for c in found
-                                if self.card_value(c.number) == val]
+                found.append(myCard)
+                val = max([self.card_value(c, True) for c in found])
+
+                of_value = [c for c in found if self.card_value(c) == val]
 
                 # Create a list with all possible combinations of the cards
                 combs = []
@@ -281,17 +285,21 @@ class Player(Holders):
                         if not lower in of_value:
                             if lower.stack:
                                 total+=self.stack_value(lower)
-                            total+=self.card_value(lower.number)
+                            total+=self.card_value(lower)
                             if total == val:
                                 if lower.stack:
                                     of_value.extend(lower.stack)
                                 of_value.extend(upper)
 
                 if of_value:
-                    if not total:
+                    if len(of_value) == len(found):
                         for c in self.cards:
-                            valHand = self.card_value(c.number)
+                            valHand = self.card_value(c)
                             if valHand == val and c != myCard:
+
+                                # Removing myCard so that it doesn't interfere
+                                # with the code below
+                                of_value.pop(of_value.index(myCard))
 
                                 for card in of_value:
                                     if card.stack:
@@ -300,6 +308,9 @@ class Player(Holders):
                                             e.stack.append(myCard)
                                             e.call = True
 
+                                # Not in the same for loop as the code above
+                                # to prevent possible infinite loops
+                                for card in of_value:
                                     for e in of_value:
                                         if not e in card.stack and e != card:
                                             card.stack.append(e)
@@ -324,7 +335,7 @@ class Player(Holders):
                         " card to later collect this", self.lineon())
                     else:
                         self.error("Some of the cards did not add up to" +
-                        "your card", self.lineon())
+                        " your card", self.lineon())
                 else:
                     self.error("None of those cards match your card",
                      self.lineon())
@@ -366,22 +377,22 @@ game = Game()
     # player3 = Player("Player 3")
     # player4 = Player("Player 4")
 
-from card import Card
-
-players[0].cards = [
-Card("5", "Hearts"),
-Card("5", "Spades"),
-Card("King", "Hearts"),
-Card("Jack", "Hearts")
-]
-
-game.middle.cards = [
-Card("5", "Diamonds"),
-Card("3", "Diamonds"),
-Card("2", "Clovers"),
-Card("2", "Diamonds"),
-Card("3", "Hearts")
-]
+# from card import Card
+#
+# players[0].cards = [
+# Card("3", "Spades"),
+# Card("8", "Spades"),
+# Card("King", "Hearts"),
+# Card("3", "Hearts")
+# ]
+#
+# game.middle.cards = [
+# Card("8", "Clovers"),
+# Card("5", "Diamonds"),
+# Card("2", "Clovers"),
+# Card("2", "Diamonds"),
+# Card("3", "Hearts")
+# ]
 
 cards_by_object(players, game.middle)
 

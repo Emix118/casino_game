@@ -6,3 +6,4 @@ class Card():
         self.type = type
         self.stack = []
         self.call = False
+        self.value = None
