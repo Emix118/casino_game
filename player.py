@@ -68,14 +68,26 @@ class Player(Holders):
                         self.error("Format error", self.lineon())
                         return
 
-                # Check if all card or stack values are equal to your card
-                if all([True if self.stack_value(x) == val
+                # Check if any card or stack values are equal to your card
+                if any([True if self.stack_value(x) == val
                     or self.card_value(x) == val else False for x in found]):
 
-                    for e in [x.stack for x in found if x.stack]:
-                        found.extend(e)
+                    of_value = []
 
-                    self.take_success(your_number, your_type, found)
+                    of_value.extend(self.check_add([x for x in found
+                                if not x in of_value and not x.stack], val))
+
+                    for e in [x for x in found
+                        if self.stack_value(x) == val]:
+
+                        of_value.extend(e.stack)
+                        of_value.append(e)
+
+                    if all(True if e in of_value else False for e in found):
+                        self.take_success(your_number, your_type, of_value)
+                    else:
+                        self.error("Not all those cards are able to be taken",
+                        self.lineon())
                 else:
                     # Added cardLst to be able to add the stacked
                     # cards since tuples are not mutable
@@ -86,7 +98,7 @@ class Player(Holders):
 
                     for mid in found:
                         try:
-                            if mid.stack and mid.call:
+                            if mid.call:
                                 if all([x.call for x in found]):
                                     total = self.stack_value(mid)
                                     for e in mid.stack:
@@ -192,12 +204,10 @@ class Player(Holders):
                         "on top of a call combination", self.lineon())
                         return
                     if midCard.stack:
-                        for n in midCard.stack:
-                            val+=self.stack_value(n)
-                    val+=self.card_value(midCard)
+                        val+=self.stack_value(midCard)
 
                 for c in self.cards:
-                    if self.card_value(c) == val:
+                    if self.card_value(c, True) == val:
 
                         for midCard in found:
                             if midCard.stack:
@@ -282,7 +292,8 @@ class Player(Holders):
                         if not lower in of_value:
                             if lower.stack:
                                 total+=self.stack_value(lower)
-                            total+=self.card_value(lower)
+                            else:
+                                total+=self.card_value(lower)
                             if total == val:
                                 if lower.stack:
                                     of_value.extend(lower.stack)
@@ -364,16 +375,20 @@ game = Game()
 from card import Card
 
 player1.cards = [
-Card("2", "Spades")
+Card("King", "Spades"),
+Card("8", "Spades")
 ]
 
 game.middle.cards = [
-Card("2", "Clovers"),
-Card("8", "Diamonds")
+Card("7", "Clovers"),
+Card("6", "Diamonds"),
+Card("King", "Hearts"),
+Card("8", "Hearts"),
+Card("8", "Clovers")
 ]
 
 player2.cards = [
-Card("8", "Hearts")
+# Card("8", "Hearts")
 ]
 
 cards_by_object(players, game.middle)

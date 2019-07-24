@@ -79,3 +79,15 @@ class Holders(Error):
         if self.find_card(number, type):
             return True
         return False
+
+    def check_add(self, cards, val):
+        result = []
+        for upper in cards:
+            up_val = self.card_value(upper)
+            for lower in cards:
+                low_val = self.card_value(lower)
+                if up_val + low_val == val and upper is not lower:
+                    if upper not in result and lower not in result:
+                        result.append(upper)
+                        result.append(lower)
+        return result
