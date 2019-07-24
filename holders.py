@@ -41,19 +41,24 @@ class Holders(Error):
                 self.error("Incorrect format used", self.lineon())
 
             if i == 0:
-                value=int(input("Pick the value of your Ace:"))
-                if value == 1 or value == 14:
-                    card.value = value
-                    return value
-                else:
-                    self.error("Incorrect value passed in", self.lineon())
-                    self.card_value(number)
-            return 10+i
+                value=input("Pick the value of your Ace:")
+                if value.isdigit():
+                    value = int(value)
+
+                    if value == 1 or value == 14:
+                        card.value = value
+                        return value
+
+                self.error("Incorrect value passed in", self.lineon())
+                return self.card_value(card)
+            else:
+                return 10+i
         else:
             return card.value
 
     def stack_value(self, card):
         lst = [self.card_value(x) for x in card.stack]
+        lst.append(self.card_value(card))
         if card.call:
             return max(lst)
         return sum(lst)
@@ -63,25 +68,14 @@ class Holders(Error):
         pos = -1
         for card in self.cards:
             pos+=1
-            if card.number.lower()[0] == number.lower()[0]:
-                if card.type.lower()[0] == type.lower()[0]:
-                    return [pos, card]
+            try:
+                if card.number.lower()[0] == number.lower()[0]:
+                    if card.type.lower()[0] == type.lower()[0]:
+                        return [pos, card]
+            except AttributeError:
+                self.error("Incorrect syntax used", self.lineon())
 
     def check_card(self, number, type):
         if self.find_card(number, type):
             return True
         return False
-
-"""
-
-player = players[0]
-player.combine(5, "s", [5, "d"], [3, "d"], [2, "c"], [2, "d"], [3, "h"])
-
-from player import game
-
-cards = [x for x in game.middle.cards if x.call]
-
-for e in cards:
-	player.stack_value(e)
-
-"""

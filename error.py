@@ -3,7 +3,7 @@ import inspect
 
 class Error():
     def error(self, message, line, stop = False):
-        print('ERROR: ' + message, line)
+        print('ERROR: ' + message, "(" + str(line) + ")" )
         if stop:
             sys.exit()
 

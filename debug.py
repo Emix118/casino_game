@@ -38,3 +38,13 @@ def check_turn(players):
             return
     Error.error(None, "Weird, it is no one's turn",
                 self.lineon())
+
+def display_points(players):
+    for player in players:
+        print(player.name + ":", player.points, "points")
+        print("--------------")
+    print("    ")
+
+def display_winner(player):
+    print("Congratulations!", player.name,
+     "for winning with", player.points, "points")

@@ -14,6 +14,7 @@ class Player(Holders):
         self.cards_taken = []
         self.points = 0
         self.isturn = False
+        self.took_last = False
 
         players.append(self)
 
@@ -49,6 +50,10 @@ class Player(Holders):
                 val = self.card_value(myCard, True)
 
                 found = []
+                if not args:
+                    self.error("No cards to take were passed in",
+                        self.lineon())
+                    return
                 for card in args:
                     try:
                         if game.middle.check_card(card[0], card[1]):
@@ -63,42 +68,22 @@ class Player(Holders):
                         self.error("Format error", self.lineon())
                         return
 
-                # Added cardLst to be able to add the stacked
-                # cards since tuples are not mutable
-                cardLst = []
+                # Check if all card or stack values are equal to your card
+                if all([True if self.stack_value(x) == val
+                    or self.card_value(x) == val else False for x in found]):
 
-                total = 0
-                stacked = []
+                    for e in [x.stack for x in found if x.stack]:
+                        found.extend(e)
 
-                # Check if all the cards have the same value as your card
-                if all([True if self.card_value(x) == val
-                        else False for x in found]):
-                    for e in found:
-                        if e.stack:
-                            # check if there's a stack with a card of
-                            # a different value
-                            if not all([True if self.card_value(c) == val
-                                    else False for c in e.stack]):
-
-                                        frmt = [[c.number,c.type]
-                                                for c in found]
-
-                                        stack = [[c.number,c.type]
-                                                for c in e.stack]
-
-                                        self.take(your_number, your_type,
-                                        *stack, *frmt)
-                                        return
-                            else:
-                                self.take_success(your_number, your_type,
-                                            found+e.stack)
-                                return
-                    self.take_success(your_number, your_type, found)
-
-                elif all([True if (self.stack and self.stack_value(x) == val) or (self.card_value(x) == val else False for x in found)]):
-                    found.extend([x.stack for x in found if x.stack])
                     self.take_success(your_number, your_type, found)
                 else:
+                    # Added cardLst to be able to add the stacked
+                    # cards since tuples are not mutable
+                    cardLst = []
+
+                    total = 0
+                    stacked = []
+
                     for mid in found:
                         try:
                             if mid.stack and mid.call:
@@ -147,6 +132,8 @@ class Player(Holders):
             for card in cardLst:
                 self.to_taken(card.number, card.type)
             self.to_taken(your_number, your_type, True)
+
+            game.took(self)
 
             game.next_turn()
 
@@ -269,7 +256,17 @@ class Player(Holders):
                 found.append(myCard)
                 val = max([self.card_value(c, True) for c in found])
 
+                # Removing myCard so that it doesn't interfere
+                # with the code below
+                found.pop(found.index(myCard))
+
                 of_value = [c for c in found if self.card_value(c) == val]
+
+                for card in found:
+                    if self.stack_value(card) == val:
+                        if card not in of_value:
+                            of_value.append(card)
+                        of_value.extend(card.stack)
 
                 # Create a list with all possible combinations of the cards
                 combs = []
@@ -292,24 +289,11 @@ class Player(Holders):
                                 of_value.extend(upper)
 
                 if of_value:
-                    if len(of_value) == len(found):
+                    if len(of_value) >= len(found):
                         for c in self.cards:
                             valHand = self.card_value(c)
                             if valHand == val and c != myCard:
 
-                                # Removing myCard so that it doesn't interfere
-                                # with the code below
-                                of_value.pop(of_value.index(myCard))
-
-                                for card in of_value:
-                                    if card.stack:
-                                        for e in card.stack:
-                                            myCard.stack.append(e)
-                                            e.stack.append(myCard)
-                                            e.call = True
-
-                                # Not in the same for loop as the code above
-                                # to prevent possible infinite loops
                                 for card in of_value:
                                     for e in of_value:
                                         if not e in card.stack and e != card:
@@ -377,22 +361,20 @@ game = Game()
     # player3 = Player("Player 3")
     # player4 = Player("Player 4")
 
-# from card import Card
-#
-# players[0].cards = [
-# Card("3", "Spades"),
-# Card("8", "Spades"),
-# Card("King", "Hearts"),
-# Card("3", "Hearts")
-# ]
-#
-# game.middle.cards = [
-# Card("8", "Clovers"),
-# Card("5", "Diamonds"),
-# Card("2", "Clovers"),
-# Card("2", "Diamonds"),
-# Card("3", "Hearts")
-# ]
+from card import Card
+
+player1.cards = [
+Card("2", "Spades")
+]
+
+game.middle.cards = [
+Card("2", "Clovers"),
+Card("8", "Diamonds")
+]
+
+player2.cards = [
+Card("8", "Hearts")
+]
 
 cards_by_object(players, game.middle)
 

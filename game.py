@@ -2,8 +2,10 @@ from card import Card
 from error import Error
 from holders import Holders
 from player import players
+from debug import display_points, display_winner
 
 import random
+import sys
 
 class Game(Error):
     """A class to manage the essentials of the game"""
@@ -32,7 +34,7 @@ class Game(Error):
 
         # Adding the numbers to numbers array
         for n in range(2,11):
-            self.numbers.insert(n, str(n))
+            self.numbers.insert(n-1, str(n))
 
         for t in self.types:
             for n in self.numbers:
@@ -102,30 +104,60 @@ class Game(Error):
                     current_lead = [spades, player]
         return current_lead
 
+    def took(self, player):
+        for p in players:
+            if p is player:
+                p.took = True
+            else:
+                p.took = False
 
-    def check_points():
+    def check_points(self):
+        for player in players:
+            player.update_points()
+
+        ##
+        display_points(players)
+
         for player in players:
             if player.points >= 21:
                 self.end_game()
-            else:
-                self.next_round()
+        self.next_set()
 
     def next_round(self):
         if all([True if not player.cards else False for player in players]):
             if self.deck:
-                # Couldn't find online what to do with the extra cards to i just
-                # dealt as many as possible to each player and then placed the rest
-                # in the middle
-                if len(self.deck) < 4 * len(players):
-                    while len(self.deck) % len(players) == 0:
-                        for player in players:
-                            self.deal(player, 1)
-                    while self.deck:
-                        self.deal_middle(1)
-                else:
-                    self.deal_cards()
+                 # Since ((52 - 4) ÷ 4) ÷ by a number of players from 2 to 4
+                 # is always a whole number, there is no need to worry about
+                 # having extra cards or not enough cards at the end
+                self.deal_cards()
             else:
-                self.next_set()
+                # Give all the cards remaining in the middle to
+                # the player who took last
+                for player in players:
+                    if player.took:
+                        while self.middle.cards:
+                            player.cards_taken.append(self.middle.cards.pop())
+
+                self.check_points()
 
     def next_set(self):
-        pass
+        response = input("Would you like to continue playing? (Yes or No): ")
+        if response.lower()[0] == "y":
+            self.__init__()
+        elif response.lower()[0] == "n":
+            self.end_game()
+        else:
+            self.error("Unexpected response, please try again", self.lineon())
+            self.next_set()
+
+    def end_game(self):
+        winner = [0, None]
+        for player in players:
+            if player.points > winner[0]:
+                winner = [player.points, player]
+        if winner[1]:
+            ##
+            display_winner(winner[1])
+            sys.exit()
+        else:
+            self.error("No player got any points", self.lineon())
