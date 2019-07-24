@@ -364,6 +364,8 @@ from game import Game
 ## Players must be defined before Game
 player1 = Player("Player 1")
 player2 = Player("Player 2")
+# player3 = Player("Player 3")
+# player4 = Player("Player 4")
 
 game = Game()
 
@@ -375,26 +377,23 @@ game = Game()
     # player3 = Player("Player 3")
     # player4 = Player("Player 4")
 
-from card import Card
+# from card import Card
+#
+# player1.cards = [
+# Card("10", "Clovers"),
+# Card("4", "Hearts"),
+# ]
+#
+# game.middle.cards = [
+# Card("6", "Clovers")
+# ]
+#
+# player2.cards = [
+# # Card("Ace", "Diamonds"),
+# Card("10", "Hearts")
+# ]
 
-player1.cards = [
-Card("10", "Clovers"),
-Card("4", "Hearts"),
-]
-
-game.middle.cards = [
-Card("6", "Clovers")
-]
-
-player2.cards = [
-# Card("Ace", "Diamonds"),
-Card("10", "Hearts")
-]
-
+##
 cards_by_object(players, game.middle)
 
 check_turn(players)
-
-
-# player2.take(10, "h", [4, "h"], [6, "c"]) when 4 and 6 were stacked
-#  meaning when you pass multiple cards that are in the same stack (new code)
