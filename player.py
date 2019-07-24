@@ -80,8 +80,11 @@ class Player(Holders):
                     for e in [x for x in found
                         if self.stack_value(x) == val]:
 
-                        of_value.extend(e.stack)
-                        of_value.append(e)
+                        for s in e.stack:
+                            if s not in of_value:
+                                of_value.append(s)
+                        if e not in of_value:
+                            of_value.append(e)
 
                     if all(True if e in of_value else False for e in found):
                         self.take_success(your_number, your_type, of_value)
@@ -203,34 +206,34 @@ class Player(Holders):
                         self.error("You cannot stack a build combination"+
                         "on top of a call combination", self.lineon())
                         return
-                    if midCard.stack:
-                        val+=self.stack_value(midCard)
+                    val+=self.stack_value(midCard)
 
                 for c in self.cards:
-                    if self.card_value(c, True) == val:
+                    if c is not myCard:
+                        if self.card_value(c, True) == val:
 
-                        for midCard in found:
-                            if midCard.stack:
-                                for e in midCard.stack:
-                                    e.stack.append(myCard)
-                                    myCard.stack.append(e)
-                            myCard.stack.append(midCard)
-                            midCard.stack.append(myCard)
+                            for midCard in found:
+                                if midCard.stack:
+                                    for e in midCard.stack:
+                                        e.stack.append(myCard)
+                                        myCard.stack.append(e)
+                                myCard.stack.append(midCard)
+                                midCard.stack.append(myCard)
 
-                            for e in found:
-                                if not e in midCard.stack and e != midCard:
-                                    midCard.stack.append(e)
+                                for e in found:
+                                    if not e in midCard.stack and e != midCard:
+                                        midCard.stack.append(e)
 
-                        game.middle.cards.append(
-                                self.cards.pop(pos))
+                            game.middle.cards.append(
+                                    self.cards.pop(pos))
 
-                        game.next_turn()
+                            game.next_turn()
 
-                        ##
-                        cards_by_object(players, game.middle)
-                        check_turn(players)
+                            ##
+                            cards_by_object(players, game.middle)
+                            check_turn(players)
 
-                        return
+                            return
 
                 self.error("You don't have a card to" +
                 " later collect this stack", self.lineon())
@@ -375,22 +378,23 @@ game = Game()
 from card import Card
 
 player1.cards = [
-Card("King", "Spades"),
-Card("8", "Spades")
+Card("10", "Clovers"),
+Card("4", "Hearts"),
 ]
 
 game.middle.cards = [
-Card("7", "Clovers"),
-Card("6", "Diamonds"),
-Card("King", "Hearts"),
-Card("8", "Hearts"),
-Card("8", "Clovers")
+Card("6", "Clovers")
 ]
 
 player2.cards = [
-# Card("8", "Hearts")
+# Card("Ace", "Diamonds"),
+Card("10", "Hearts")
 ]
 
 cards_by_object(players, game.middle)
 
 check_turn(players)
+
+
+# player2.take(10, "h", [4, "h"], [6, "c"]) when 4 and 6 were stacked
+#  meaning when you pass multiple cards that are in the same stack (new code)
