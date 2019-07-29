@@ -17,21 +17,21 @@ class Game(Error):
     numbers = ['Ace', 'Jack', 'Queen', 'King']
 
     def __init__(self):
-        amount = input("How many players? (2-4) ")
-        if amount.isdigit():
-            amount = int(amount)
 
-            if amount not in range(2, 5):
+        going = True
+        while going:
+            amount = input("How many players? (2-4) ")
+            if amount.isdigit():
+                amount = int(amount)
+
+                if amount in range(2, 5):
+                    going = False
+                else:
+                    self.error("Incorrect value for amount of players",
+                        self.lineon())
+            else:
                 self.error("Incorrect value for amount of players",
                     self.lineon())
-                self.__init__()
-        else:
-            self.error("Incorrect value for amount of players",
-                self.lineon())
-            self.__init__()
-
-        if amount > 4:
-            self.error("Too many players", self.lineon(), True)
 
         for n in range(1, amount+1):
             players.append(Player('Player ' + str(n)))
