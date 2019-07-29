@@ -1,9 +1,8 @@
 from holders import Holders
+from scene import game
 from debug import print_cards, cards_by_object, check_turn
 
 import itertools
-
-players = []
 
 class Player(Holders):
     "A class for the players"
@@ -15,8 +14,6 @@ class Player(Holders):
         self.points = 0
         self.isturn = False
         self.took_last = False
-
-        players.append(self)
 
     def update_points(self):
 
@@ -359,15 +356,13 @@ class Player(Holders):
         except:
             self.error("Card not found", self.lineon())
 
-from game import Game
-
 ## Players must be defined before Game
-player1 = Player("Player 1")
-player2 = Player("Player 2")
-# player3 = Player("Player 3")
-# player4 = Player("Player 4")
+# player1 = Player("Player 1")
+# player2 = Player("Player 2")
+# # player3 = Player("Player 3")
+# # player4 = Player("Player 4")
 
-game = Game()
+# game = Game()
 
 
 ###############################################################
@@ -394,6 +389,6 @@ game = Game()
 # ]
 
 ##
-cards_by_object(players, game.middle)
-
-check_turn(players)
+# cards_by_object(players, game.middle)
+#
+# check_turn(players)

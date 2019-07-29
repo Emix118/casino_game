@@ -1,8 +1,11 @@
 from card import Card
 from error import Error
 from holders import Holders
-from player import players
-from debug import display_points, display_winner
+from player import Player
+from scene import game, players
+
+from debug import (display_points, display_winner,
+        print_cards, cards_by_object, check_turn)
 
 import random
 import sys
@@ -14,14 +17,32 @@ class Game(Error):
     numbers = ['Ace', 'Jack', 'Queen', 'King']
 
     def __init__(self):
-        if len(players) > 4:
+        amount = input("How many players? (2-4) ")
+        if amount.isdigit():
+            amount = int(amount)
+
+            if amount not in range(2, 5):
+                self.error("Incorrect value for amount of players",
+                    self.lineon())
+                self.__init__()
+        else:
+            self.error("Incorrect value for amount of players",
+                self.lineon())
+            self.__init__()
+
+        if amount > 4:
             self.error("Too many players", self.lineon(), True)
+
+        for n in range(1, amount+1):
+            players.append(Player('Player ' + str(n)))
 
         self.deck = []
         self.middle = Holders()
 
         if players:
             players[0].isturn = True
+        else:
+            self.error("No players", self.lineon())
         self.turn = 0
 
         self.build_deck()
@@ -158,6 +179,13 @@ class Game(Error):
         if winner[1]:
             ##
             display_winner(winner[1])
-            sys.exit()
+            # sys.exit()
         else:
             self.error("No player got any points", self.lineon())
+
+##############
+game = Game()
+
+cards_by_object(players, game.middle)
+
+check_turn(players)
