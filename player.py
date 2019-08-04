@@ -1,5 +1,4 @@
 from holders import Holders
-from scene import game
 from debug import print_cards, cards_by_object, check_turn
 
 import itertools
@@ -52,18 +51,18 @@ class Player(Holders):
                         self.lineon())
                     return
                 for card in args:
-                    try:
-                        if game.middle.check_card(card[0], card[1]):
+                    # try:
+                    if game.middle.check_card(card[0], card[1]):
 
-                            mid = game.middle.find_card(card[0], card[1])[1]
-                            found.append(mid)
-                        else:
-                            self.error("One or more of those" +
+                        mid = game.middle.find_card(card[0], card[1])[1]
+                        found.append(mid)
+                    else:
+                        self.error("One or more of those" +
 " cards were not found in the middle area", self.lineon())
-                            return
-                    except:
-                        self.error("Format error", self.lineon())
                         return
+                    # except:
+                    #     self.error("Format error", self.lineon())
+                    #     return
 
                 # Check if any card or stack values are equal to your card
                 if any([True if self.stack_value(x) == val
@@ -356,14 +355,9 @@ class Player(Holders):
         except:
             self.error("Card not found", self.lineon())
 
-## Players must be defined before Game
-# player1 = Player("Player 1")
-# player2 = Player("Player 2")
-# # player3 = Player("Player 3")
-# # player4 = Player("Player 4")
-
-# game = Game()
-
+from game import Game, players
+game = Game()
+# players = game.players
 
 ###############################################################
 

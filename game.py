@@ -1,8 +1,10 @@
 from card import Card
 from error import Error
 from holders import Holders
-from player import Player
-from scene import game, players
+
+
+import player
+from scene import players
 
 from debug import (display_points, display_winner,
         print_cards, cards_by_object, check_turn)
@@ -23,18 +25,14 @@ class Game(Error):
             amount = input("How many players? (2-4) ")
             if amount.isdigit():
                 amount = int(amount)
-
                 if amount in range(2, 5):
                     going = False
-                else:
-                    self.error("Incorrect value for amount of players",
-                        self.lineon())
             else:
                 self.error("Incorrect value for amount of players",
                     self.lineon())
 
         for n in range(1, amount+1):
-            players.append(Player('Player ' + str(n)))
+            players.append(player.Player('Player ' + str(n)))
 
         self.deck = []
         self.middle = Holders()
@@ -48,6 +46,11 @@ class Game(Error):
         self.build_deck()
         self.deal_cards()
         self.deal_middle(4)
+
+        ##
+        cards_by_object(players, self.middle)
+
+        check_turn(players)
 
     def build_deck(self):
         # Create a standard 52-card deck using the Card class
@@ -147,7 +150,7 @@ class Game(Error):
     def next_round(self):
         if all([True if not player.cards else False for player in players]):
             if self.deck:
-                 # Since ((52 - 4) ÷ 4) ÷ by a number of players from 2 to 4
+                 # Since ((52 - 4) / 4) / by a number of players from 2 to 4
                  # is always a whole number, there is no need to worry about
                  # having extra cards or not enough cards at the end
                 self.deal_cards()
@@ -179,13 +182,18 @@ class Game(Error):
         if winner[1]:
             ##
             display_winner(winner[1])
-            # sys.exit()
+            sys.exit()
         else:
             self.error("No player got any points", self.lineon())
 
 ##############
-game = Game()
+# if __name__ == '__main__':
+# game = Game()
 
-cards_by_object(players, game.middle)
-
-check_turn(players)
+# player1 = players[0]
+# player2 = players[1]
+#
+# if len(players) < 2:
+#     player3 = players[2]
+#     if len(players) < 3:
+#         player4 = players[3]

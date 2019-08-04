@@ -1,4 +1,4 @@
 
-game = None
+# game =
 
 players = []
